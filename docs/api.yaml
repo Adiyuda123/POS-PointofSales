@@ -10,6 +10,9 @@ info:
     url: https://www.apache.org/licenses/LICENSE-2.0
 servers:
   # Added by API Auto Mocking Plugin
+  # Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/123ADIYUDA/PointofSales/1.0.0
   - description: SwaggerHub API Auto Mocking
     url: https://virtserver.swaggerhub.com/123ADIYUDA/POS-PointofSales/1.0.0
   # Main Url
@@ -20,7 +23,7 @@ paths:
 ####################################
 #  AUTH
 ####################################
-  /auth/register:
+  /register:
     post:
       tags:
         - Auth
@@ -72,7 +75,7 @@ paths:
         '400':
           $ref: '#/components/responses/400'
   
-  /auth/login:
+  /login:
     post:
       tags:
         - Auth
@@ -97,6 +100,8 @@ paths:
                 type: object
                 example:
                   data:
+                      user_id: 2
+                      user_name: Jaka
                       token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
                   code: 200
                   message: "Login success"
@@ -104,7 +109,7 @@ paths:
           $ref: '#/components/responses/401'
         '400':
           $ref: '#/components/responses/400'
-  /auth/change-password:
+  /change_password:
     post:
       tags:
         - Auth
@@ -266,6 +271,25 @@ paths:
         - Products
       summary: List all Products
       description: Feature for get all products
+      parameters:
+        - in: query
+          name: page
+          description: Page number
+          schema:
+            type: integer
+            example: 1
+        - in: query
+          name: per_page
+          description: Number of records per page
+          schema:
+            type: integer
+            example: 10
+        - in: query
+          name: user_id
+          description: User ID filter
+          schema:
+            type: integer
+            example: 1
       security:
         - JWTAuth: []
       responses:
@@ -280,23 +304,21 @@ paths:
                   [
                     {
                       "id": 1,
-                      "user_id": 2,
+                      "user_name": "Jaka",
                       "product_name": "Kulit Kadal",
                       "description": "warna ungu",
                       "price": 2000000,
                       "pictures" : "https://res.cloudinary.com/dzfodjxht/image/upload/v1685032143/pointofsales/product/product1.jpg",
-                      "stock": 10,
-                      "sold": 8
+                      "stock": 10
                     },
                     {
                       "id": 2,
-                      "user_id": 3,
+                      "user_name": "Sembung",
                       "product_name": "Sapu Terbang",
                       "description": "terbuat dari besi pilihan",
                       "pictures" : "https://res.cloudinary.com/dzfodjxht/image/upload/v1685032143/pointofsales/product/product2.jpg",
                       "price": 3000000,
-                      "stock": 15,
-                      "sold": 3
+                      "stock": 15
                     }
                   ]
                 code: 200
@@ -346,8 +368,7 @@ paths:
                       "description": "keripik yang terbuat dari kulit kelapa",
                       "pictures" : "https://res.cloudinary.com/dzfodjxht/image/upload/v1685032143/pointofsales/product/product3.jpg",
                       "price": 2000000,
-                      "stock": 10,
-                      "sold": 0
+                      "stock": 10
                     }
                   ]
                 code: 201
@@ -383,13 +404,12 @@ paths:
                 data:
                   {
                     "id": 3,
-                    "user_id": 2,
+                    "user_name": "Jaka",
                     "product_name": "Keripik Kelapa",
                     "description": "keripik yang terbuat dari kulit kelapa",
                     "pictures" : "https://res.cloudinary.com/dzfodjxht/image/upload/v1685032143/pointofsales/product/product3.jpg",
                     "price": 2000000,
-                    "stock": 10,
-                    "sold": 0
+                    "stock": 10
                   }
                 code: 200
                 message: "Success get product by id"
@@ -469,65 +489,13 @@ paths:
           $ref: "#/components/responses/404"
         500:
           $ref: "#/components/responses/500" 
- 
-  /users/{id}/products:
-    parameters:
-      - $ref: "#/components/parameters/paramId"
-    get:
-      tags:
-        - Products
-      summary: Get products by user id
-      description: Feature for get all product by user id
-      security:
-        - JWTAuth: []
-      responses:
-        200:
-          description: "get products by user id"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/responseObject"
-              example:
-                example:
-                data:
-                  [
-                    {
-                      "id": 3,
-                      "user_id": 2,
-                      "product_name": "Keripik Kelapa",
-                      "description": "keripik yang terbuat dari kulit kelapa",
-                      "pictures" : "https://res.cloudinary.com/dzfodjxht/image/upload/v1685032143/pointofsales/product/product3.jpg",
-                      "price": 2000000,
-                      "stock": 10,
-                      "sold": 0
-                    },
-                    {
-                      "id": 4,
-                      "user_id": 2,
-                      "product_name": "Kipas Baja",
-                      "description": "kipas tahan segala medan",
-                      "pictures" : "https://res.cloudinary.com/dzfodjxht/image/upload/v1685032143/pointofsales/product/product4.jpg",
-                      "price": 2000000,
-                      "stock": 20,
-                      "sold": 7
-                    }
-                  ]
-                code: 200
-                message: "Success get all product by user"
-        400:
-          $ref: "#/components/responses/400"
-        500:
-          $ref: "#/components/responses/500" 
-  
-####################################
-#  CARTS
-####################################
-  /carts:
+
+  /restock:
     post:
       tags: 
-        - Cart
-      summary: Add to cart
-      description: Feature for add product to cart
+        - Products
+      summary: Add stock
+      description: Feature for restock products
       security:
         - JWTAuth: []
       requestBody:
@@ -535,11 +503,11 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Cart"
+              $ref: "#/components/schemas/responseObject"
             example:
               product_id: 1
-              product_pcs: 1
-              customer: "Dilan"
+              restock_quantity: 10
+                
       responses:
         201:
           description: "success insert data"
@@ -548,110 +516,88 @@ paths:
               schema: 
                 type: object
                 properties:
-                  code:
-                    type: number
                   message:
                     type: string
               example:
-                code: 200
-                message: "Success add product to cart"
+                code: 201
+                message: "Success restock product"
         400:
           $ref: "#/components/responses/400"
         500:
           $ref: "#/components/responses/500"
+    
     get:
       tags:
-        - Cart
-      summary: Get all cart
-      description: Feature for get all cart by user id
+        - Products
+      summary: Get restock history
+      description: Retrieve the history of restocked items
       security:
         - JWTAuth: []
+      parameters:
+        - in: query
+          name: page
+          description: Page number
+          schema:
+            type: integer
+            example: 1
+        - in: query
+          name: per_page
+          description: Number of records per page
+          schema:
+            type: integer
+            example: 10
+        - in: query
+          name: start_date
+          description: Start date filter (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: end_date
+          description: End date filter (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: user_id
+          description: User ID filter
+          schema:
+            type: integer
+            example: 1
       responses:
         200:
-          description: "get all cart"
+          description: "get restock history"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/responseObject"
               example:
                 {
-                    "data": [
+                  "data": [
                     {
-                      "id": 1,
+                      "restock_id": 1,
                       "product_id": 1,
-                      "product_name": "Kulit Kadal",
-                      "product_pcs": 2,
-                      "product_price": 2000000,
-                      "product_picture": "https://res.cloudinary.com/dzfodjxht/image/upload/v1685032143/pointofsales/product/product1.jpg",
-                      "customer": "Dilan"
+                      "restock_quantity": 10,
+                      "restock_date": "2023-06-08",
+                      "user_id": 1
                     },
                     {
-                      "id": 2,
+                      "restock_id": 2,
                       "product_id": 2,
-                      "product_name": "Sapu Terbang",
-                      "product_pcs": 3,
-                      "product_price": 3000000,
-                      "product_picture": "https://res.cloudinary.com/dzfodjxht/image/upload/v1685032143/pointofsales/product/product2.jpg",
-                      "customer": "Dilan"
-                    },
-                    {
-                      "id": 3,
-                      "product_id": 3,
-                      "product_name": "Keripik Kelapa",
-                      "product_pcs": 4,
-                      "product_price": 200000,
-                      "product_picture": "https://res.cloudinary.com/dzfodjxht/image/upload/v1685032143/pointofsales/product/product3.jpg",
-                      "customer": "Dilan"
-                    },
-                    {
-                      "id": 4,
-                      "product_id": 4,
-                      "product_name": "Kipas Baja",
-                      "product_pcs": 2,
-                      "product_price": 2000000,
-                      "product_picture": "https://res.cloudinary.com/dzfodjxht/image/upload/v1685032143/pointofsales/product/product4.jpg",
-                      "customer": "Dilan"
-                    },
+                      "restock_quantity": 5,
+                      "restock_date": "2023-06-07",
+                      "user_id": 2
+                    }
                   ],
-                    code: 200,                
-                    message: "success get all cart"
+                  "code": 200,
+                  "message": "Success get restock history"
                 }
+                
         400:
           $ref: "#/components/responses/400"
         500:
           $ref: "#/components/responses/500"
-  /carts/{id}:
-    parameters:
-      - $ref: "#/components/parameters/paramId"
-    delete:
-      tags:
-        - Cart
-      summary: Delete a cart
-      description: Feature for delete cart by id
-      security:
-        - JWTAuth: []
-      responses:
-        200:
-          description: success delete data
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code:
-                    type: number
-                  message:
-                    type: string
-              example:
-                code: 200
-                message: "succes delete a cart"
-        400:
-          $ref: "#/components/responses/400"
-        404:
-          $ref: "#/components/responses/404"
-        500:
-          $ref: "#/components/responses/500" 
-
+          
 ####################################
 #  TRANSACTIONS
 ####################################
@@ -660,41 +606,40 @@ paths:
       tags: 
         - Transaction
       summary: Add transaction
-      description: Feature for add transaction product from the cart
+      description: Feature to add a transaction product from the cart
       security:
         - JWTAuth: []
       requestBody:
-        description: transaction
+        description: Transaction
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Transaction"
+              $ref: "#/components/schemas/responseObject"
             example:
-              cart_id: 1
+              customer: "Dilan"
+              items:
+                - product_id: 1
+                  product_pcs: 2
+                - product_id: 2
+                  product_pcs: 3
       responses:
         201:
-          description: "success insert data"
+          description: "Success insert data"
           content:
             application/json:
               schema: 
-                type: object
-                properties:
-                  code:
-                    type: number
-                  message:
-                    type: string
+                $ref: "#/components/schemas/responseObject"
               example:
-                data: {
-                    "id": 1,
-                    "order_id": "POS-032155488899654562",
-                    "payment_status": "pending",
-                    "payment_link": "https://www.xendit.co",
-                    "total_payment": 690000,
-                    "customer": "Dilan"
-                    }
+                data:
+                  id: "trx_12345"
+                  external_id: "POS-032155488899654562"
+                  status: "PENDING"
+                  invoice_url: "https://www.xendit.co/invoice/trx_12345"
+                  amount: 690000
+                  customer_name: "Dilan"
                 code: 200
-                message: "success add product to cart"
+                message: "Success add product to cart"
         400:
           $ref: "#/components/responses/400"
         500:
@@ -702,56 +647,100 @@ paths:
     get:
       tags:
         - Transaction
-      summary: Get all transaction
-      description: Feature for get all transaction by user id
+      summary: Get all transactions
+      description: Feature to get all transactions
+      parameters:
+        - in: query
+          name: page
+          description: Page number
+          schema:
+            type: integer
+            example: 1
+        - in: query
+          name: per_page
+          description: Number of records per page
+          schema:
+            type: integer
+            example: 10
+        - in: query
+          name: start_date
+          description: Start date filter (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: end_date
+          description: End date filter (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: user_id
+          description: User ID filter
+          schema:
+            type: integer
+            example: 1
       security:
         - JWTAuth: []
       responses:
         200:
-          description: "get all transaction"
+          description: "Get all transactions"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/responseObject"
+                $ref: "#/components/schemas/TransactionsResponse"
               example:
-                {
-                    data: [
-                    {
-                      "id": 1,
-                      "order_id": "POS-032155488899654562",
-                      "payment_status": "pending",
-                      "payment_link": "https://www.xendit.co",
-                      "total_payment": 690000,
-                      "customer": "Dilan"
-                    },
-                    {
-                      "id": 2,
-                      "order_id": "POS-032155488899654562",
-                      "payment_status": "success",
-                      "payment_link": "https://www.xendit.co",
-                      "total_payment": 250000,
-                      "customer": "Dilan"
-                    },
-                    {
-                      "id": 3,
-                      "order_id": "POS-032155488899654562",
-                      "payment_status": "failure",
-                      "payment_link": "https://www.xendit.co",
-                      "total_payment": 300000,
-                      "customer": "Dilan"
-                    },
-                    {
-                      "id": 4,
-                      "order_id": "POS-032155488899654562",
-                      "payment_status": "success",
-                      "payment_link": "https://www.xendit.co",
-                      "total_payment": 200000,
-                      "customer": "Dilan"
-                    },
-                  ],  
-                    code: 200,              
-                    message: "success get all transaction"
-                }
+                data:
+                  - id: "trx_1"
+                    external_id: "POS-032155488899654562"
+                    status: "PENDING"
+                    invoice_url: "https://www.xendit.co/invoice/trx_1"
+                    amount: 690000
+                    items:
+                      - product_name: "Kulit Kadal"
+                        product_pcs: 2
+                      - product_name: "Kupluk"
+                        product_pcs: 3
+                    user_name: "Jaka"
+                    customer: "Dilan"
+                  - id: "trx_2"
+                    external_id: "POS-032155488899654562"
+                    status: "SUCCESS"
+                    invoice_url: "https://www.xendit.co/invoice/trx_2"
+                    amount: 250000
+                    items:
+                      - product_name: "Kulit Kadal"
+                        product_pcs: 2
+                      - product_name: "Kupluk"
+                        product_pcs: 3
+                    user_name: "Jaka"
+                    customer: "Dilan"
+                  - id: "trx_3"
+                    external_id: "POS-032155488899654562"
+                    status: "FAILURE"
+                    invoice_url: "https://www.xendit.co/invoice/trx_3"
+                    amount: 300000
+                    items:
+                      - product_name: "Kulit Kadal"
+                        product_pcs: 2
+                      - product_name: "Kupluk"
+                        product_pcs: 3
+                    user_name: "Sembung"
+                    customer: "Milea"
+                  - id: "trx_4"
+                    external_id: "POS-032155488899654562"
+                    status: "SUCCESS"
+                    invoice_url: "https://www.xendit.co/invoice/trx_4"
+                    amount: 200000
+                    items:
+                      - product_name: "Kulit Kadal"
+                        product_pcs: 2
+                      - product_name: "Kupluk"
+                        product_pcs: 3
+                    user_name: "Sembung"
+                    customer: "Milea"
+                code: 200
+                message: "Success get all transactions"
         400:
           $ref: "#/components/responses/400"
         500:
@@ -905,7 +894,19 @@ components:
           type: integer
           format: int64
           description: total of payment
-        
+          
+    TransactionsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        code:
+          type: number
+        message:
+          type: string
+
   parameters:
     paramId:
       name: id
