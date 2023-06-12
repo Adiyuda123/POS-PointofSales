@@ -39,7 +39,7 @@ func (um *userModel) DeleteUser(id uint) error {
 // GetUserById implements users.Repository.
 func (um *userModel) GetUserById(id uint) (users.Core, error) {
 	var res users.Core
-	if err := um.db.Table("users").Select("name, email, picture").Where("id = ?", id).First(&res).Error; err != nil {
+	if err := um.db.Table("users").Select("name, email, pictures").Where("id = ?", id).First(&res).Error; err != nil {
 		log.Error("error occurs in finding user profile", err.Error())
 		return users.Core{}, err
 	}
@@ -53,14 +53,15 @@ func (um *userModel) UpdateProfile(id uint, name string, email string, phone str
 	if picture != nil {
 		file, err := picture.Open()
 		if err != nil {
-			log.Errorf("error occurs on open picture %v", err)
-			return errors.New("error on open picture")
+			log.Errorf("error occurred while opening picture: %v", err)
+			return errors.New("failed to open picture")
 		}
 		defer file.Close()
-		uploadURL, err := helper.UploadFile(&file, "/users")
+
+		uploadURL, err := helper.UploadFile(file, "/users")
 		if err != nil {
-			log.Errorf("error occurs on uploadFile in path %v", err)
-			return errors.New("error on upload file in path")
+			log.Errorf("error occurred while uploading file: %v", err)
+			return errors.New("failed to upload file")
 		}
 		UpdateUser.Pictures = uploadURL[0]
 	}

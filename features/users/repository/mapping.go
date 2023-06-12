@@ -11,7 +11,6 @@ func CoreToModel(data users.Core) User {
 		Phone:    data.Phone,
 		Pictures: data.Pictures,
 		Password: data.Password,
-		// Products: []repository.Product{},
 	}
 }
 
@@ -29,7 +28,7 @@ func ModelToCore(data User) users.Core {
 	return result
 }
 
-func ListUserToUserEntity(user []User) []users.Core {
+func ListUserToUserCore(user []User) []users.Core {
 	var data []users.Core
 	for _, v := range user {
 		data = append(data, ModelToCore(v))

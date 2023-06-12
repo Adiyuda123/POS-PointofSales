@@ -14,8 +14,7 @@ func AuthRoutes(e *echo.Echo, ac auth.Handler) {
 	e.Use(middleware.CORS())
 	e.Use(middleware.Logger())
 
-	e.POST("/register", ac.RegisterHandler(), helper.JWTMiddleWare())
-	e.POST("/login", ac.LoginHandler(), helper.JWTMiddleWare())
-	e.POST("/change_password", ac.ChangePasswordHandler(), helper.JWTMiddleWare())
-
+	e.POST("/register", ac.RegisterHandler(), helper.JWTMiddleware())
+	e.POST("/login", ac.LoginHandler())
+	e.POST("/change_password", ac.ChangePasswordHandler(), helper.JWTMiddleware())
 }

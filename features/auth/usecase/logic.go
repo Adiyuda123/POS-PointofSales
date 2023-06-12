@@ -5,6 +5,7 @@ import (
 	"POS-PointofSales/features/users"
 	"POS-PointofSales/helper"
 	"errors"
+	"mime/multipart"
 	"strings"
 
 	"github.com/labstack/gommon/log"
@@ -21,21 +22,37 @@ func New(r auth.Repository) auth.UseCase {
 }
 
 // ChangePassword implements auth.UseCase.
-func (al *authLogic) ChangePassword(id uint, oldPassword string, newPassword string, confirmPassword string, hash string) error {
-	if oldPassword == "" || newPassword == "" || confirmPassword == "" {
-		return errors.New("old password,new password, and confirm password cannot be empty")
+func (al *authLogic) ChangePassword(id uint, oldPassword string, newPassword string, confirmPassword string) error {
+	oldPasswordHashed, err := helper.HashPassword(oldPassword)
+	if err != nil {
+		return err
+	}
+	user, err := al.data.GetUserByEmailOrId(".", id)
+	if err != nil {
+		return err
+	}
+
+	if match := helper.CheckPasswordHash(oldPasswordHashed, user.Password); !match {
+		return errors.New("old password does not match with the existing password")
 	}
 
 	if newPassword != confirmPassword {
-		return errors.New("new password and confirm password must be similarity")
+		return errors.New("new password and confirm password must be similar")
 	}
 
-	user, _ := al.data.GetUserByEmailOrId(".", id)
-	if !helper.CheckPasswordHash(oldPassword, user.Password) {
-		return errors.New("old password not match with exist password")
+	newPasswordHashed, err := helper.HashPassword(newPassword)
+	if err != nil {
+		return err
 	}
 
-	return al.data.EditPassword(id, hash)
+	user.Password = newPasswordHashed
+
+	if err := al.data.EditPassword(id, oldPassword, newPassword, confirmPassword); err != nil {
+		log.Error("error on loginlogic, internal server error", err.Error())
+		return errors.New("internal server error")
+	}
+
+	return nil
 }
 
 // LogInLogic implements auth.UseCase.
@@ -59,17 +76,18 @@ func (al *authLogic) LogInLogic(email string, password string) (users.Core, erro
 }
 
 // RegisterUser implements auth.UseCase.
-func (al *authLogic) RegisterUser(newUser users.Core) error {
-	if err := al.data.InsertUser(newUser); err != nil {
+func (al *authLogic) RegisterUser(newUser users.Core, picture *multipart.FileHeader) (users.Core, error) {
+	res, err := al.data.InsertUser(newUser, picture)
+	if err != nil {
 		log.Error("error on calling register insert user query", err.Error())
 		if strings.Contains(err.Error(), "column") {
-			return errors.New("server error")
+			return users.Core{}, errors.New("server error")
 		} else if strings.Contains(err.Error(), "value") {
-			return errors.New("invalid value")
+			return users.Core{}, errors.New("invalid value")
 		} else if strings.Contains(err.Error(), "too short") {
-			return errors.New("invalid password length")
+			return users.Core{}, errors.New("invalid password length")
 		}
-		return errors.New("server error")
+		return users.Core{}, errors.New("server error")
 	}
-	return nil
+	return res, nil
 }

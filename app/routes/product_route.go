@@ -14,9 +14,9 @@ func ProductRoutes(e *echo.Echo, pc products.Handler) {
 	e.Use(middleware.CORS())
 	e.Use(middleware.Logger())
 
-	e.POST("/products", pc.AddHandler(), helper.JWTMiddleWare())
-	e.GET("/products", pc.GetAllHandler(), helper.JWTMiddleWare())
-	e.GET("/products/:id", pc.GetProductByIdHandler(), helper.JWTMiddleWare())
-	e.PUT("/products/:id", pc.UpdateHandler(), helper.JWTMiddleWare())
-	e.DELETE("/products/:id", pc.DeleteHandler(), helper.JWTMiddleWare())
+	e.POST("/products", pc.AddHandler(), helper.JWTMiddleware())
+	e.GET("/products", pc.GetAllHandler(), helper.JWTMiddleware())
+	e.GET("/products/:id", pc.GetProductByIdHandler(), helper.JWTMiddleware())
+	e.PUT("/products/:id", pc.UpdateHandler(), helper.JWTMiddleware())
+	e.DELETE("/products/:id", pc.DeleteHandler(), helper.JWTMiddleware())
 }
