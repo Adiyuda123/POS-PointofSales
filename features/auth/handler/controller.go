@@ -5,9 +5,9 @@ import (
 	"POS-PointofSales/features/users"
 	"POS-PointofSales/helper"
 	"net/http"
-	"strconv"
 	"strings"
 
+	"github.com/jinzhu/copier"
 	echo "github.com/labstack/echo/v4"
 )
 
@@ -24,31 +24,29 @@ func New(au auth.UseCase) auth.Handler {
 // ChangePasswordHandler implements auth.Handler.
 func (uc *authController) ChangePasswordHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		userIdString := helper.DecodeToken(c)
-		if userIdString == "" {
+		userId := helper.DecodeToken(c)
+		if userId == 0 {
 			c.Logger().Error("decode token is blank")
-			return c.JSON(helper.ResponseFormat(http.StatusBadRequest, "jwt invalid", nil))
+			return c.JSON(http.StatusBadRequest, "jwt invalid")
 		}
 
-		userId, err := strconv.Atoi(userIdString)
+		req := new(ChangePasswordRequest)
+		if err := c.Bind(req); err != nil {
+			c.Logger().Error("error on bind change password request", err.Error())
+			return c.JSON(http.StatusBadRequest, "invalid request")
+		}
+
+		oldPasswordHashed, err := helper.HashPassword(req.OldPassword)
 		if err != nil {
-			c.Logger().Error("error converting userId to int", err.Error())
-			return c.JSON(helper.ResponseFormat(http.StatusBadRequest, "invalid userId", nil))
+			return err
 		}
 
-		r := ChangePasswordRequest{}
-		if err := c.Bind(&r); err != nil {
-			c.Logger().Error("error on bind login input", err.Error())
-			return c.JSON(helper.ResponseFormat(http.StatusBadRequest, "invalid input", nil))
+		if err := uc.service.ChangePassword(userId, oldPasswordHashed, req.NewPassword, req.ConfirmPassword); err != nil {
+			c.Logger().Error("error on changing password", err.Error())
+			return c.JSON(http.StatusBadRequest, err.Error())
 		}
 
-		hash, _ := helper.HashPassword(r.NewPassword)
-		if err := uc.service.ChangePassword(uint(userId), r.OldPassword, r.NewPassword, r.ConfirmPassword, hash); err != nil {
-			c.Logger().Error("error on bind login input", err.Error())
-			return c.JSON(helper.ResponseFormat(http.StatusBadRequest, "invalid input", nil))
-		}
-
-		return c.JSON(helper.ResponseFormat(http.StatusOK, "change password Success", nil))
+		return c.JSON(http.StatusOK, "change password success")
 	}
 }
 
@@ -74,7 +72,7 @@ func (uc *authController) LoginHandler() echo.HandlerFunc {
 			}
 			return c.JSON(helper.ResponseFormat(http.StatusInternalServerError, "internal server error", nil))
 		}
-		token, err := helper.GenerateToken(strconv.Itoa(int(res.ID)))
+		token, err := helper.GenerateToken(res.ID)
 		if err != nil {
 			c.Logger().Error("error on generation token", err.Error())
 			return c.JSON(helper.ResponseFormat(http.StatusInternalServerError, "Internal server error", nil))
@@ -91,28 +89,57 @@ func (uc *authController) LoginHandler() echo.HandlerFunc {
 // RegisterHandler implements auth.Handler.
 func (uc *authController) RegisterHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
+		var registerInput RegisterInput
 		userID := helper.DecodeToken(c)
-		if userID != "admin" {
-			c.Logger().Error("user is not admin trying to access add position")
-			return c.JSON(helper.ResponseFormat(http.StatusUnauthorized, "you are not an admin", nil))
+		if userID == 0 {
+			c.Logger().Error("gagal mendekode userID dari token")
+			return c.JSON(helper.ResponseFormat(http.StatusUnauthorized, "token tidak valid", nil))
 		}
 
-		name := c.FormValue("name")
-		email := c.FormValue("email")
-		phone := c.FormValue("phone_number")
-		pictures := c.FormValue("pictures")
+		if userID != 1 {
+			c.Logger().Error("pengguna bukan admin yang mencoba mengakses penambahan posisi")
+			return c.JSON(helper.ResponseFormat(http.StatusUnauthorized, "Anda bukan admin", nil))
+		}
 
-		err := uc.service.RegisterUser(users.Core{
-			Name:     name,
-			Email:    email,
-			Phone:    phone,
-			Pictures: pictures,
-		})
+		if err := c.Bind(&registerInput); err != nil {
+			c.Logger().Error("error on bind login input", err.Error())
+			return c.JSON(helper.ResponseFormat(http.StatusBadRequest, "invalid input", nil))
+		}
+
+		registerInput.Name = c.FormValue("name")
+		registerInput.Email = c.FormValue("email")
+		registerInput.Phone = c.FormValue("phone_number")
+		file, err := c.FormFile("pictures")
 		if err != nil {
-			c.Logger().Error("error on calling RegisterUser", err.Error())
-			return c.JSON(helper.ResponseFormat(http.StatusInternalServerError, err.Error(), nil))
+			if err == http.ErrMissingFile {
+			} else {
+				c.Logger().Error("error on retrieving uploaded file:", err.Error())
+				return c.JSON(helper.ResponseFormat(http.StatusInternalServerError, "failed to retrieve uploaded file", nil))
+			}
 		}
 
-		return c.JSON(helper.ResponseFormat(http.StatusCreated, "successfully created user", nil))
+		registerUser := users.Core{}
+		copier.Copy(&registerUser, &registerInput)
+
+		data, err := uc.service.RegisterUser(registerUser, file)
+		if err != nil {
+			c.Logger().Error("failed on calling updateprofile log")
+			if strings.Contains(err.Error(), "open") {
+				c.Logger().Error("errors occurs on opening picture file")
+				return c.JSON(helper.ResponseFormat(http.StatusBadRequest, "error on opening picture", nil))
+			} else if strings.Contains(err.Error(), "upload file in path") {
+				c.Logger().Error("upload file in path are error")
+				return c.JSON(helper.ResponseFormat(http.StatusInternalServerError, "error upload image", nil))
+			} else if strings.Contains(err.Error(), "affected") {
+				c.Logger().Error("no rows affected on update user")
+				return c.JSON(helper.ResponseFormat(http.StatusBadRequest, "data is up to date", nil))
+			}
+
+			return c.JSON(helper.ResponseFormat(http.StatusInternalServerError, "internal server error", nil))
+		}
+		res := RegisterResponse{}
+		copier.Copy(&res, &data)
+
+		return c.JSON(helper.ResponseFormat(http.StatusCreated, "pengguna berhasil dibuat", res))
 	}
 }

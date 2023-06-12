@@ -12,4 +12,5 @@ type Product struct {
 	Pictures     string
 	Stock        int
 	UserID       uint
+	UserName     string
 }

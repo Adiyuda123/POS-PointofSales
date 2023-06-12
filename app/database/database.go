@@ -19,10 +19,10 @@ func InitDBMySql(cfg config.AppConfig) *gorm.DB {
 	)
 
 	db, err := gorm.Open(mysql.Open(connectionString), &gorm.Config{})
-
 	if err != nil {
 		log.Println("error connect to database:", err.Error())
 		return nil
 	}
+
 	return db
 }

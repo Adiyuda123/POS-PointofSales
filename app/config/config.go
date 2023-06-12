@@ -13,7 +13,7 @@ var (
 	CloudinaryApiKey       string
 	CloudinaryApiScret     string
 	CloudinaryUploadFolder string
-	PasswordUser           string
+	XenditSecretKey        string
 )
 
 type AppConfig struct {
@@ -22,14 +22,15 @@ type AppConfig struct {
 	DBHOST     string
 	DBPORT     string
 	DBNAME     string
+	JWT        string
 }
 
 func InitConfig() *AppConfig {
-	return ReadEnv()
+	return &AppConfig{}
 }
 
 func ReadEnv() *AppConfig {
-	app := AppConfig{}
+	app := &AppConfig{}
 	isRead := true
 
 	if val, found := os.LookupEnv("DBUSER"); found {
@@ -74,9 +75,8 @@ func ReadEnv() *AppConfig {
 		CloudinaryUploadFolder = val
 		isRead = false
 	}
-
-	if val, found := os.LookupEnv("PASSWORD_USER"); found {
-		PasswordUser = val
+	if val, found := os.LookupEnv("XENDIT_SECRET_KEY"); found {
+		XenditSecretKey = val
 		isRead = false
 	}
 
@@ -87,24 +87,24 @@ func ReadEnv() *AppConfig {
 
 		err := viper.ReadInConfig()
 		if err != nil {
-			log.Println("error read config : ", err.Error())
+			log.Println("error reading config:", err.Error())
 			return nil
 		}
 
-		app.DBUSER = viper.Get("DBUSER").(string)
-		app.DBPASSWORD = viper.Get("DBPASSWORD").(string)
-		app.DBHOST = viper.Get("DBHOST").(string)
-		app.DBPORT = viper.Get("DBPORT").(string)
-		app.DBNAME = viper.Get("DBNAME").(string)
+		app.DBUSER = viper.GetString("DBUSER")
+		app.DBPASSWORD = viper.GetString("DBPASSWORD")
+		app.DBHOST = viper.GetString("DBHOST")
+		app.DBPORT = viper.GetString("DBPORT")
+		app.DBNAME = viper.GetString("DBNAME")
 
-		JWT = viper.Get("JWT").(string)
+		JWT = viper.GetString("JWT")
 
-		CloudinaryName = viper.Get("CLOUDINARY_CLOUD_NAME").(string)
-		CloudinaryApiKey = viper.Get("CLOUDINARY_API_KEY").(string)
-		CloudinaryApiScret = viper.Get("CLOUDINARY_API_SECRET").(string)
-		CloudinaryUploadFolder = viper.Get("CLOUDINARY_UPLOAD_FOLDER").(string)
-		PasswordUser = viper.Get("PASSWORD_USER").(string)
-
+		CloudinaryName = viper.GetString("CLOUDINARY_CLOUD_NAME")
+		CloudinaryApiKey = viper.GetString("CLOUDINARY_API_KEY")
+		CloudinaryApiScret = viper.GetString("CLOUDINARY_API_SECRET")
+		CloudinaryUploadFolder = viper.GetString("CLOUDINARY_UPLOAD_FOLDER")
+		XenditSecretKey = viper.GetString("XENDIT_SECRET_KEY")
 	}
-	return &app
+
+	return app
 }

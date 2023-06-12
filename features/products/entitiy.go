@@ -14,6 +14,7 @@ type Core struct {
 	Pictures     string
 	Stock        int
 	UserID       uint
+	UserName     string
 }
 
 type Handler interface {
@@ -25,17 +26,17 @@ type Handler interface {
 }
 
 type UseCase interface {
-	Add(newProduct Core, file *multipart.FileHeader) error
-	GetAll(page int, name string) ([]Core, error)
+	Add(newProduct Core, file *multipart.FileHeader) (Core, error)
+	GetAll(limit, offset int, name string) ([]Core, int, error)
 	GetProductById(id uint) (Core, error)
 	Update(userId uint, id uint, updateProduct Core, file *multipart.FileHeader) error
 	Delete(userId uint, id uint) error
 }
 
 type Repository interface {
-	Insert(input Core) error
-	SelectAll(limit, offset int, name string) ([]Core, error)
+	Insert(newProduct Core, file *multipart.FileHeader) (Core, error)
+	SelectAll(limit, offset int, name string) ([]Core, int, error)
 	GetProductById(id uint) (Core, error)
-	Update(userId uint, id uint, input Core) error
+	Update(userId uint, id uint, input Core, file *multipart.FileHeader) error
 	Delete(userId uint, id uint) error
 }
