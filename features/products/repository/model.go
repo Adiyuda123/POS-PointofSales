@@ -1,11 +1,13 @@
 package repository
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 )
 
 type Product struct {
-	gorm.Model
+	ID           uint `gorm:"primarykey"`
 	Name         string
 	Descriptions string
 	Price        int
@@ -13,4 +15,7 @@ type Product struct {
 	Stock        int
 	UserID       uint
 	UserName     string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	DeletedAt    gorm.DeletedAt `gorm:"index"`
 }

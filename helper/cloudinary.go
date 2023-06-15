@@ -4,9 +4,12 @@ import (
 	"POS-PointofSales/app/config"
 	"context"
 	"mime/multipart"
+	"path/filepath"
+	"strings"
 
 	"github.com/cloudinary/cloudinary-go/v2"
 	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
+	"github.com/go-playground/validator/v10"
 )
 
 func UploadFile(fileContents interface{}, path string) ([]string, error) {
@@ -46,4 +49,14 @@ func getLink(content multipart.File, path string) (string, error) {
 		return "", err
 	}
 	return uploadResult.SecureURL, nil
+}
+
+func ValidImageFormat(fl validator.FieldLevel) bool {
+	file, ok := fl.Field().Interface().(string)
+	if !ok {
+		return false
+	}
+
+	ext := strings.ToLower(filepath.Ext(file))
+	return ext == ".jpg" || ext == ".jpeg" || ext == ".png"
 }

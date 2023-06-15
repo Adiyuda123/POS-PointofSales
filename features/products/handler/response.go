@@ -2,6 +2,7 @@ package handler
 
 import (
 	"POS-PointofSales/features/products"
+	"time"
 )
 
 type ProductResponse struct {
@@ -12,6 +13,7 @@ type ProductResponse struct {
 	Price        int    `json:"price"`
 	Pictures     string `json:"pictures"`
 	Stock        int    `json:"stock"`
+	CreatedAt    string `json:"created_at"`
 }
 
 func CoreToProductResponse(data products.Core) ProductResponse {
@@ -23,6 +25,7 @@ func CoreToProductResponse(data products.Core) ProductResponse {
 		Price:        data.Price,
 		Pictures:     data.Pictures,
 		Stock:        data.Stock,
+		CreatedAt:    data.CreatedAt.Add(7 * time.Hour).Format("2006-01-02 15:04"),
 	}
 }
 

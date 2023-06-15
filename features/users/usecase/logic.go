@@ -2,20 +2,27 @@ package usecase
 
 import (
 	"POS-PointofSales/features/users"
+	"POS-PointofSales/helper"
 	"errors"
 	"mime/multipart"
 	"strings"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/gommon/log"
 )
 
 type userLogic struct {
-	u users.Repository
+	u         users.Repository
+	validator *validator.Validate
 }
 
 func New(r users.Repository) users.UseCase {
+	validate := validator.New()
+	validate.RegisterValidation("validImageFormat", helper.ValidImageFormat)
+
 	return &userLogic{
-		u: r,
+		u:         r,
+		validator: validate,
 	}
 }
 
@@ -39,6 +46,20 @@ func (ul *userLogic) DeleteUserLogic(id uint) error {
 
 // UpdateProfileLogic implements users.UseCase.
 func (ul *userLogic) UpdateProfileLogic(id uint, name string, email string, phone string, picture *multipart.FileHeader) error {
+	userData := users.Core{
+		ID:       id,
+		Name:     name,
+		Email:    email,
+		Phone:    phone,
+		Pictures: picture.Filename,
+	}
+
+	err := ul.validator.Struct(userData)
+	if err != nil {
+		log.Error("validation error:", err.Error())
+		return err
+	}
+
 	if err := ul.u.UpdateProfile(id, name, email, phone, picture); err != nil {
 		log.Error("failed on calling updateprofile query")
 		if strings.Contains(err.Error(), "open") {

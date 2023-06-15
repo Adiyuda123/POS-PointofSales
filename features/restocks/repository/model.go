@@ -1,13 +1,18 @@
 package repository
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 )
 
 type Restock struct {
-	gorm.Model
+	ID        uint `gorm:"primarykey"`
 	ProductID uint
 	Quantity  int
-	Date      string
 	UserID    uint
+	UserName  string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }

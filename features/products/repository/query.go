@@ -5,6 +5,7 @@ import (
 	"POS-PointofSales/helper"
 	"errors"
 	"mime/multipart"
+	"time"
 
 	"github.com/labstack/gommon/log"
 	"gorm.io/gorm"
@@ -85,19 +86,31 @@ func (pm *productModel) Insert(newProduct products.Core, file *multipart.FileHea
 }
 
 // SelectAll implements products.Repository.
-func (pm *productModel) SelectAll(limit int, offset int, name string) ([]products.Core, int, error) {
-	nameSearch := "%" + name + "%"
+func (pm *productModel) SelectAll(userID uint, limit int, offset int, search string, fromDate, toDate time.Time) ([]products.Core, int, error) {
+	nameSearch := "%" + search + "%"
 	totalData := int64(-1)
 	var productModel []Product
 
 	query := pm.db.Table("products").
 		Select("products.id, products.name, products.descriptions, products.price, products.pictures, products.stock, users.name AS user_name").
 		Joins("JOIN users ON products.user_id = users.id").
-		Group("products.id").Find(&productModel).
+		Group("products.id").
 		Limit(limit).Offset(offset).
 		Order("id DESC")
 
-	if name != "" {
+	if userID != 1 {
+		query = query.Where("products.user_id = ?", userID)
+	}
+
+	if !fromDate.IsZero() {
+		query = query.Where("products.created_at >= ?", fromDate)
+	}
+
+	if !toDate.IsZero() {
+		query = query.Where("products.created_at < ?", toDate)
+	}
+
+	if search != "" {
 		if err := query.Where("products.name LIKE ? OR products.descriptions LIKE ? OR products.price LIKE ? OR products.stock LIKE ? OR users.name LIKE ?",
 			nameSearch, nameSearch, nameSearch, nameSearch, nameSearch).Find(&productModel).Error; err != nil {
 			log.Errorf("error on finding search: %w", err)

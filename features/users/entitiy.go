@@ -9,10 +9,10 @@ import (
 type Core struct {
 	ID       uint
 	Name     string
-	Email    string
-	Phone    string
-	Pictures string
-	Password string
+	Email    string `validate:"omitempty,email"`
+	Phone    string `validate:"omitempty,min=10"`
+	Pictures string `validate:"validImageFormat"`
+	Password string `validate:"omitempty,min=6"`
 }
 
 type Handler interface {

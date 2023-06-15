@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jinzhu/copier"
 	echo "github.com/labstack/echo/v4"
@@ -165,14 +166,38 @@ func (pc *productController) GetAllHandler() echo.HandlerFunc {
 			offset = offsetInt
 		}
 
-		data, totaldata, err := pc.service.GetAll(limit, offset, search)
+		fromDateStr := c.QueryParam("from_date")
+		toDateStr := c.QueryParam("to_date")
+
+		fromDate := time.Time{}
+		if fromDateStr != "" {
+			var err error
+			fromDate, err = time.Parse("2006-01-02", fromDateStr)
+			if err != nil {
+				c.Logger().Errorf("from_date is not a valid date: %s", fromDateStr)
+				return c.JSON(helper.ResponseFormat(http.StatusBadRequest, "Invalid from_date value", nil))
+			}
+		}
+
+		toDate := time.Now()
+		if toDateStr != "" {
+			var err error
+			toDate, err = time.Parse("2006-01-02", toDateStr)
+			if err != nil {
+				c.Logger().Errorf("to_date is not a valid date: %s", toDateStr)
+				return c.JSON(helper.ResponseFormat(http.StatusBadRequest, "Invalid to_date value", nil))
+			}
+			toDate = toDate.AddDate(0, 0, 1)
+		}
+
+		data, totalData, err := pc.service.GetAll(userID, limit, offset, search, fromDate, toDate)
 		if err != nil {
 			c.Logger().Error("error occurs when calling GetAll Logic")
 			return c.JSON(helper.ResponseFormat(http.StatusInternalServerError, "Server Error", nil))
 		}
 
 		dataResponse := CoreToGetAllProductResponse(data)
-		pagination := helper.Pagination(limit, offset, totaldata)
+		pagination := helper.Pagination(limit, offset, totalData)
 
 		return c.JSON(helper.ReponseFormatWithMeta(http.StatusOK, "Successfully retrieved product data", dataResponse, pagination))
 	}
