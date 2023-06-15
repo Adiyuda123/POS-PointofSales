@@ -13,7 +13,10 @@ require (
 	gorm.io/gorm v1.25.1
 )
 
-require github.com/golang-jwt/jwt/v5 v5.0.0
+require (
+	github.com/golang-jwt/jwt/v5 v5.0.0
+	github.com/xendit/xendit-go v1.0.20
+)
 
 require (
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
@@ -21,7 +24,6 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.14.1 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
-	github.com/xendit/xendit-go v1.0.20 // indirect
 )
 
 require (

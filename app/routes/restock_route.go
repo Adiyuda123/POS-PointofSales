@@ -15,5 +15,5 @@ func RestockRoutes(e *echo.Echo, pc restocks.Handler) {
 	e.Use(middleware.Logger())
 
 	e.POST("/restocks", pc.AddRestock(), helper.JWTMiddleware())
-	// e.GET("/restocks", pc.GetAllHandler(), helper.JWTMiddleware())
+	e.GET("/restocks", pc.GetAllRestockHandler(), helper.JWTMiddleware())
 }

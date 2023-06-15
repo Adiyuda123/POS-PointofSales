@@ -6,6 +6,7 @@ import (
 
 func CoreToModel(data products.Core) Product {
 	return Product{
+		ID:           data.ID,
 		Name:         data.Name,
 		Descriptions: data.Descriptions,
 		Price:        data.Price,
@@ -13,6 +14,7 @@ func CoreToModel(data products.Core) Product {
 		Stock:        data.Stock,
 		UserID:       data.UserID,
 		UserName:     data.UserName,
+		CreatedAt:    data.CreatedAt,
 	}
 }
 
@@ -27,6 +29,7 @@ func ModelToCore(data Product) products.Core {
 		Stock:        data.Stock,
 		UserID:       data.UserID,
 		UserName:     data.UserName,
+		CreatedAt:    data.CreatedAt,
 	}
 
 	return result

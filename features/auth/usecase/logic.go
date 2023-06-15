@@ -8,16 +8,21 @@ import (
 	"mime/multipart"
 	"strings"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/gommon/log"
 )
 
 type authLogic struct {
-	data auth.Repository
+	data      auth.Repository
+	validator *validator.Validate
 }
 
 func New(r auth.Repository) auth.UseCase {
+	validate := validator.New()
+	validate.RegisterValidation("validImageFormat", helper.ValidImageFormat)
 	return &authLogic{
-		data: r,
+		data:      r,
+		validator: validate,
 	}
 }
 
@@ -57,6 +62,17 @@ func (al *authLogic) ChangePassword(id uint, oldPassword string, newPassword str
 
 // LogInLogic implements auth.UseCase.
 func (al *authLogic) LogInLogic(email string, password string) (users.Core, error) {
+	// loginData := users.Core{
+	// 	Email:    email,
+	// 	Password: password,
+	// }
+
+	// err := al.validator.Struct(loginData)
+	// if err != nil {
+	// 	log.Error("validation error:", err.Error())
+	// 	return users.Core{}, err
+	// }
+
 	res, err := al.data.Login(email, password)
 	if err != nil {
 
@@ -77,6 +93,19 @@ func (al *authLogic) LogInLogic(email string, password string) (users.Core, erro
 
 // RegisterUser implements auth.UseCase.
 func (al *authLogic) RegisterUser(newUser users.Core, picture *multipart.FileHeader) (users.Core, error) {
+	registerData := users.Core{
+		Name:     newUser.Name,
+		Email:    newUser.Email,
+		Phone:    newUser.Phone,
+		Pictures: picture.Filename,
+	}
+
+	err := al.validator.Struct(registerData)
+	if err != nil {
+		log.Error("validation error:", err.Error())
+		return users.Core{}, err
+	}
+
 	res, err := al.data.InsertUser(newUser, picture)
 	if err != nil {
 		log.Error("error on calling register insert user query", err.Error())

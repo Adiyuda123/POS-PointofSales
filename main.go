@@ -13,6 +13,9 @@ import (
 	rHandler "POS-PointofSales/features/restocks/handler"
 	rRepo "POS-PointofSales/features/restocks/repository"
 	rLogic "POS-PointofSales/features/restocks/usecase"
+	tHandler "POS-PointofSales/features/transactions/handler"
+	tRepo "POS-PointofSales/features/transactions/repository"
+	tLogic "POS-PointofSales/features/transactions/usecase"
 	uHandler "POS-PointofSales/features/users/handler"
 	uRepo "POS-PointofSales/features/users/repository"
 	uLogic "POS-PointofSales/features/users/usecase"
@@ -50,10 +53,20 @@ func main() {
 	rSrv := rLogic.New(rMdl)
 	rCtl := rHandler.New(rSrv)
 
+	// tdMdl := tdRepo.New(db)
+	// tdSrv := tdLogic.New(tdMdl)
+	// tdCtl := tdHandler.New(tdSrv, pMdl)
+
+	tMdl := tRepo.New(db)
+	tSrv := tLogic.New(tMdl)
+	tCtl := tHandler.New(tSrv, pMdl)
+
 	routes.AuthRoutes(e, aCtl)
 	routes.UserRoutes(e, uCtl)
 	routes.ProductRoutes(e, pCtl)
 	routes.RestockRoutes(e, rCtl)
+	// routes.TransactionDetailRoutes(e, tdCtl)
+	routes.TransactionRoutes(e, tCtl)
 
 	if err := e.Start(":8080"); err != nil {
 		log.Fatal(err)
