@@ -41,4 +41,6 @@ type Repository interface {
 	GetProductById(id uint) (Core, error)
 	Update(userId uint, id uint, input Core, file *multipart.FileHeader) error
 	Delete(userId uint, id uint) error
+	GetProductByIds(ids []uint) ([]Core, error)
+	UpdateProductStock(productID uint, quantity int) error
 }

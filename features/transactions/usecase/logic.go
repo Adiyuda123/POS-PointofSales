@@ -4,95 +4,94 @@ import (
 	"POS-PointofSales/features/transactions"
 	"errors"
 	"strings"
+	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/gommon/log"
 )
 
 type transactionLogic struct {
-	t transactions.Repository
+	t         transactions.Repository
+	validator *validator.Validate
 }
 
 func New(r transactions.Repository) transactions.UseCase {
 	return &transactionLogic{
-		t: r,
+		t:         r,
+		validator: validator.New(),
 	}
 }
 
-// CreateTransactionsIfNotExists implements transactions.UseCase.
-func (tl *transactionLogic) CreateTransactionsIfNotExists(userId uint, id uint, customer string) (transactions.Core, error) {
-	existingTransaction, err := tl.t.SelectTransactionById(id)
+// GetHistoryTransaction implements transactions.UseCase.
+func (tl *transactionLogic) GetHistoryTransaction(userID uint, limit int, offset int, search string, fromDate time.Time, toDate time.Time) ([]transactions.ItemCore, int, error) {
+	result, totaldata, err := tl.t.SelectHistoryTransaction(userID, limit, offset, search, fromDate, toDate)
 	if err != nil {
-		return transactions.Core{}, err
+		log.Error("failed to find all restock", err.Error())
+		return []transactions.ItemCore{}, totaldata, errors.New("internal server error")
 	}
 
-	if existingTransaction.Id != 0 {
-		return existingTransaction, nil
-	}
-
-	newTransaction := transactions.Core{
-		Id:       id,
-		Status:   "Pending",
-		Customer: customer,
-		UserID:   userId,
-	}
-
-	createdTransaction, err := tl.t.InsertTransactions(userId, newTransaction)
-	if err != nil {
-		return transactions.Core{}, err
-	}
-
-	if createdTransaction.Id != id {
-		return transactions.Core{}, errors.New("failed to create transaction with the provided ID")
-	}
-
-	return createdTransaction, nil
+	return result, totaldata, nil
 }
 
-// GetTransactionById implements transactions.UseCase.
-func (tl *transactionLogic) GetTransactionById(id uint) (transactions.Core, error) {
-	result, err := tl.t.SelectTransactionById(id)
+// GetItemById implements transactions.UseCase.
+func (tl *transactionLogic) GetItemByOrderId(orderID string) (transactions.ItemCore, error) {
+	result, err := tl.t.SelectItemByOrderId(orderID)
 	if err != nil {
-		log.Error("failed to find transaction", err.Error())
-		return transactions.Core{}, errors.New("internal server error")
+		log.Error("failed to find item", err.Error())
+		return transactions.ItemCore{}, errors.New("internal server error")
 	}
 
 	return result, nil
 }
 
-// GetTotalAmount implements transactions.UseCase.
-func (tl *transactionLogic) GetTotalAmount(externalID string, customer string) (int, error) {
-	amount, err := tl.t.GetTotalAmount(externalID, customer)
+// AddPayments implements transactions.UseCase.
+func (tl *transactionLogic) AddPayments(userID uint, newTransaction transactions.Core) (transactions.Core, error) {
+	err := tl.validator.Struct(newTransaction)
 	if err != nil {
-		return 0, err
+		log.Error("validation error:", err.Error())
+		return transactions.Core{}, err
 	}
-	return amount, nil
-}
 
-// AddTransactions implements transactions.UseCase.
-func (tl *transactionLogic) AddTransactions(userID uint, newDetailTransaction transactions.DetailCore) (transactions.DetailCore, error) {
-	res, err := tl.t.InsertDetailTransactions(userID, newDetailTransaction)
+	res, err := tl.t.InsertPayments(userID, newTransaction)
 	if err != nil {
 		log.Error("failed on calling add product query")
 		if strings.Contains(err.Error(), "open") {
 			log.Error("errors occurs on opening picture file")
-			return transactions.DetailCore{}, errors.New("product photo are not allowed")
+			return transactions.Core{}, errors.New("product photo are not allowed")
 		} else if strings.Contains(err.Error(), "upload file in path") {
 			log.Error("upload file in path are error")
-			return transactions.DetailCore{}, errors.New("cannot upload file in path")
+			return transactions.Core{}, errors.New("cannot upload file in path")
 		} else if strings.Contains(err.Error(), "affected") {
 			log.Error("no rows affected on add product")
-			return transactions.DetailCore{}, errors.New("data is up to date")
+			return transactions.Core{}, errors.New("data is up to date")
 		}
-		return transactions.DetailCore{}, err
+		return transactions.Core{}, err
 	}
 	return res, nil
 }
 
 // AddTransactions implements transactions.UseCase.
-func (tl *transactionLogic) CreateTransactions(userId uint, newTransaction transactions.Core) (transactions.Core, error) {
-	res, err := tl.t.InsertTransactions(userId, newTransaction)
+func (tl *transactionLogic) AddTransactions(userID uint, newDetailTransaction transactions.ItemCore) (transactions.ItemCore, error) {
+	err := tl.validator.Struct(newDetailTransaction)
 	if err != nil {
-		return transactions.Core{}, err
+		log.Error("validation error:", err.Error())
+		return transactions.ItemCore{}, err
+	}
+
+	res, err := tl.t.InsertDetailTransactions(userID, newDetailTransaction)
+	if err != nil {
+		log.Error("failed on calling add product query")
+		if strings.Contains(err.Error(), "open") {
+			log.Error("errors occurs on opening picture file")
+			return transactions.ItemCore{}, errors.New("product photo are not allowed")
+		} else if strings.Contains(err.Error(), "upload file in path") {
+			log.Error("upload file in path are error")
+			return transactions.ItemCore{}, errors.New("cannot upload file in path")
+		} else if strings.Contains(err.Error(), "affected") {
+			log.Error("no rows affected on add product")
+			return transactions.ItemCore{}, errors.New("data is up to date")
+		}
+		return transactions.ItemCore{}, err
 	}
 	return res, nil
 }

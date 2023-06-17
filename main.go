@@ -53,19 +53,14 @@ func main() {
 	rSrv := rLogic.New(rMdl)
 	rCtl := rHandler.New(rSrv)
 
-	// tdMdl := tdRepo.New(db)
-	// tdSrv := tdLogic.New(tdMdl)
-	// tdCtl := tdHandler.New(tdSrv, pMdl)
-
 	tMdl := tRepo.New(db)
 	tSrv := tLogic.New(tMdl)
-	tCtl := tHandler.New(tSrv, pMdl)
+	tCtl := tHandler.New(tSrv, pMdl, uMdl)
 
 	routes.AuthRoutes(e, aCtl)
 	routes.UserRoutes(e, uCtl)
 	routes.ProductRoutes(e, pCtl)
 	routes.RestockRoutes(e, rCtl)
-	// routes.TransactionDetailRoutes(e, tdCtl)
 	routes.TransactionRoutes(e, tCtl)
 
 	if err := e.Start(":8080"); err != nil {

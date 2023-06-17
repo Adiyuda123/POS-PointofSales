@@ -3,6 +3,8 @@ package repository
 import (
 	"POS-PointofSales/features/products/repository"
 	"POS-PointofSales/features/transactions"
+	"POS-PointofSales/helper"
+	"time"
 
 	"github.com/labstack/gommon/log"
 	"gorm.io/gorm"
@@ -18,114 +20,138 @@ func New(db *gorm.DB) transactions.Repository {
 	}
 }
 
-// // GetTransactionByExternalID implements transactions.Repository.
-// func (tm *transactionModel) GetTransactionByExternalID(externalID string) (transactions.Core, error) {
-// 	res := Transaction{}
-// 	if err := tm.db.Table("transactions").
-// 		Where("external_id = ?", externalID).
-// 		First(&res).Error; err != nil {
-// 		if err == gorm.ErrRecordNotFound {
-// 			// Return an empty Core if the transaction doesn't exist
-// 			return transactions.Core{}, nil
-// 		}
-// 		log.Error("error occurs in finding transaction by external ID:", err.Error())
-// 		return transactions.Core{}, err
-// 	}
+// SelectHistoryTransaction implements transactions.Repository.
+func (tm *transactionModel) SelectHistoryTransaction(userID uint, limit int, offset int, search string, fromDate time.Time, toDate time.Time) ([]transactions.ItemCore, int, error) {
+	nameSearch := "%" + search + "%"
+	totalData := int64(-1)
+	var ItemModel []Item
 
-// 	return ModelToTransaction(res), nil
-// }
+	query := tm.db.Table("items").
+		Select("items.id, items.sub_total, items.customer, items.order_id, items.status, items.user_name").
+		Joins("JOIN users ON items.user_id = users.id").
+		Joins("JOIN item_details ON items.id = item_details.item_id").
+		Joins("JOIN products ON item_details.product_id = products.id").
+		Group("items.id").
+		Preload("Details").
+		Preload("Details.Product").
+		Limit(limit).Offset(offset).
+		Order("items.id DESC")
 
-// SelectTransactionById implements transactions.Repository.
-func (tm *transactionModel) SelectTransactionById(id uint) (transactions.Core, error) {
-	res := Transaction{}
-	if err := tm.db.Table("transactions").
-		Where("id = ?", id).
-		First(&res).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			// Return an empty Core if the transaction doesn't exist
-			return transactions.Core{}, nil
+	if userID != 1 {
+		query = query.Where("items.user_id = ?", userID)
+	}
+
+	if !fromDate.IsZero() {
+		query = query.Where("items.created_at >= ?", fromDate)
+	}
+
+	if !toDate.IsZero() {
+		query = query.Where("items.created_at < ?", toDate)
+	}
+
+	if search != "" {
+		if err := query.Where("items.id LIKE ? OR item_details.quantity LIKE ? OR item_details.product_id LIKE ? OR items.user_id LIKE ? OR items.user_name LIKE ?",
+			nameSearch, nameSearch, nameSearch, nameSearch, nameSearch).Find(&ItemModel).Error; err != nil {
+			log.Errorf("error on finding search: %w", err)
+			return []transactions.ItemCore{}, int(totalData), err
 		}
-		log.Error("error occurs in finding transaction by id:", err.Error())
+		if err := tm.db.Table("items").
+			Joins("JOIN users ON items.user_id = users.id").
+			Joins("JOIN item_details ON items.id = item_details.item_id").
+			Joins("JOIN products ON item_details.product_id = products.id").
+			Where("items.id LIKE ? OR item_details.quantity LIKE ? OR item_details.product_id LIKE ? OR items.user_id LIKE ? OR items.user_name LIKE ?",
+				nameSearch, nameSearch, nameSearch, nameSearch, nameSearch).
+			Count(&totalData).Error; err != nil {
+			log.Errorf("error on count filtered data: %w", err)
+			return []transactions.ItemCore{}, int(totalData), err
+		}
+	} else {
+		if err := query.Find(&ItemModel).Error; err != nil {
+			log.Errorf("error on finding data without search: %w", err)
+			return []transactions.ItemCore{}, int(totalData), err
+		}
+		if err := tm.db.Table("items").Count(&totalData).Error; err != nil {
+			log.Errorf("error on counting data without search: %w", err)
+			return []transactions.ItemCore{}, int(totalData), err
+		}
+	}
+
+	restockCoreAll := ListItemToCore(ItemModel)
+	return restockCoreAll, int(totalData), nil
+}
+
+// GetItemById implements transactions.Repository.
+func (tm *transactionModel) SelectItemByOrderId(orderID string) (transactions.ItemCore, error) {
+	res := Item{}
+	if err := tm.db.Table("items").
+		Select("items.id, items.sub_total, items.customer, items.order_id, items.status").
+		Joins("JOIN users ON items.user_id = users.id").
+		Where("items.order_id = ?", orderID).
+		First(&res).Error; err != nil {
+		log.Error("error occurs in finding item by id:", err.Error())
+		return transactions.ItemCore{}, err
+	}
+
+	return ItemToCore(res), nil
+}
+
+// InsertPayments implements transactions.Repository.
+func (tm *transactionModel) InsertPayments(userID uint, newTransaction transactions.Core) (transactions.Core, error) {
+	payment := CoreToTransaction(newTransaction)
+	qrCode, err := helper.CreateQRCodeHelper2(payment.ExternalID, payment.CallbackURL, payment.Amount)
+	if err != nil {
+		log.Error("error creating QR code:", err.Error())
 		return transactions.Core{}, err
 	}
 
-	return ModelToTransaction(res), nil
-}
-
-// GetTotalAmount implements transactions.Repository.
-func (tm *transactionModel) GetTotalAmount(externalID string, customer string) (int, error) {
-	var amount int
-	if err := tm.db.Model(&Transactiondetail{}).
-		Where("transactiondetails.external_id = ? AND transactiondetails.customer = ?", externalID, customer).
-		Select("SUM(transactiondetails.total)").
-		Scan(&amount).Error; err != nil {
-		return 0, err
+	qrCodePayment := Transaction{
+		ID:          qrCode.ID,
+		ExternalID:  payment.ExternalID,
+		Amount:      payment.Amount,
+		QRString:    qrCode.QRString,
+		CallbackURL: payment.CallbackURL,
+		Type:        string(qrCode.Type),
+		Status:      qrCode.Status,
+		Created:     qrCode.Created.String(),
+		Updated:     qrCode.Updated.String(),
+		Customer:    payment.Customer,
+		ItemID:      payment.ItemID,
+		UserID:      userID,
+		OrderID:     payment.OrderID,
 	}
-	return amount, nil
+
+	if err := tm.db.Create(&qrCodePayment).Error; err != nil {
+		return transactions.Core{}, err
+	}
+
+	return TransactionToCore(qrCodePayment), nil
 }
 
 // InsertDetailTransactions implements transactions.Repository.
-func (tm *transactionModel) InsertDetailTransactions(userID uint, inputDetail transactions.DetailCore) (transactions.DetailCore, error) {
-	productTransactionDetail := CoreToModel(inputDetail)
+func (tm *transactionModel) InsertDetailTransactions(userID uint, inputDetail transactions.ItemCore) (transactions.ItemCore, error) {
+	productTransactionDetail := CoreToItem(inputDetail)
 
 	var product repository.Product
-	if err := tm.db.First(&product, productTransactionDetail.ProductID).Error; err != nil {
-		return transactions.DetailCore{}, err
+	if err := tm.db.First(&product, productTransactionDetail.Details[0].ProductID).Error; err != nil {
+		log.Error("ERROR FIRST", err.Error())
+		return transactions.ItemCore{}, err
 	}
 
-	total := product.Price * productTransactionDetail.Quantity
-	productTransactionDetail.Total = total
-
-	if err := tm.db.Create(&productTransactionDetail).Error; err != nil {
-		return transactions.DetailCore{}, err
+	if err := tm.db.Create(&productTransactionDetail); err.Error != nil {
+		return transactions.ItemCore{}, err.Error
 	}
 
-	tm.db.Model(&product).
-		Where("id = ?", productTransactionDetail.ProductID).
-		UpdateColumn("stock", gorm.Expr("stock - ?", productTransactionDetail.Quantity))
-
-	return ModelToCore(productTransactionDetail), nil
-}
-
-// InsertTransactions implements transactions.Repository.
-func (tm *transactionModel) InsertTransactions(userId uint, input transactions.Core) (transactions.Core, error) {
-	transaction := TransactionToModel(input)
-	if err := tm.db.Create(&transaction).Error; err != nil {
-		return transactions.Core{}, err
+	totalQuantity := 0
+	for i := 0; i < len(productTransactionDetail.Details); i++ {
+		totalQuantity /= productTransactionDetail.Details[i].Quantity
 	}
-	// panic("QUERY PANIC SATU DUA")
-	// Simpan detail transaksi
-	// for _, detail := range transaction.Transactiondetails {
-	// 	detail.ExternalID = transaction.ExternalID
-	// 	if err := tm.db.Create(&detail).Error; err != nil {
-	// 		return transactions.Core{}, err
-	// 	}
-	// }
-
-	for _, detail := range transaction.Transactiondetails {
-		detail.ExternalID = transaction.ExternalID
-		if err := tm.db.Create(&detail).Error; err != nil {
-			return transactions.Core{}, err
+	for i := 0; i < len(productTransactionDetail.Details); i++ {
+		productID := productTransactionDetail.Details[i].ProductID
+		if err := tm.db.Model(&repository.Product{}).Where("id = ?", productID).Update("stock", gorm.Expr("stock - ?", totalQuantity)).Error; err != nil {
+			log.Error("error occurred in updating stock after transaction")
+			return transactions.ItemCore{}, err
 		}
-		transaction.Transactiondetails = append(transaction.Transactiondetails, detail)
 	}
 
-	// var amount int
-	// if err := tm.db.Model(&Transactiondetail{}).
-	// 	Where("transactiondetails.external_id = ? AND transactiondetails.customer = ?",
-	// 		input.ExternalID, input.Customer).
-	// 	Select("SUM(transactiondetails.total)").
-	// 	Scan(&amount).Error; err != nil {
-	// 	return transactions.Core{}, err
-	// }
-	// // transaction.Amount = amount
-	// fmt.Printf("amount: %d\n", amount)
-
-	// if err := tm.db.Model(&transactions.Core{}).
-	// 	Where("external_id = ? AND customer = ?", input.ExternalID, input.Customer).
-	// 	Update("amount", amount).Error; err != nil {
-	// 	return transactions.Core{}, err
-	// }
-
-	return input, nil
+	return ItemToCore(productTransactionDetail), nil
 }

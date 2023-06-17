@@ -21,6 +21,31 @@ func New(db *gorm.DB) products.Repository {
 	}
 }
 
+// UpdateProductStock implements products.Repository.
+func (pm *productModel) UpdateProductStock(productID uint, quantity int) error {
+	return pm.db.Model(&Product{}).
+		Where("id = ?", productID).
+		Update("stock", gorm.Expr("stock - ?", quantity)).
+		Error
+}
+
+// GetProductByIds implements products.Repository.
+func (pm *productModel) GetProductByIds(ids []uint) ([]products.Core, error) {
+	var productModels []Product
+
+	// Execute the query
+	if err := pm.db.Table("products").
+		Select("products.id, products.name, products.descriptions, products.price, products.pictures, products.stock, users.name AS user_name").
+		Joins("JOIN users ON products.user_id = users.id").
+		Where("products.id IN (?)", ids).
+		Find(&productModels).Error; err != nil {
+		log.Errorf("error occurs in finding products by ids: %s", err.Error())
+		return nil, err
+	}
+
+	return ListproductToproductCore(productModels), nil
+}
+
 // Delete implements products.Repository.
 func (pm *productModel) Delete(userId uint, id uint) error {
 	productToDelete := &Product{}

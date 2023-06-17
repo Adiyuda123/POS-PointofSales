@@ -1,28 +1,44 @@
 package repository
 
 import (
+	"POS-PointofSales/features/products/repository"
+
 	"gorm.io/gorm"
 )
 
 type Transaction struct {
-	gorm.Model
-	ExternalID         string
-	Status             string
-	InvoiceURL         string
-	Amount             int
-	Customer           string
-	UserID             uint
-	Transactiondetails []Transactiondetail `gorm:"foreignKey:TransactionID"`
+	ID          string
+	ExternalID  string
+	Amount      int
+	QRString    string
+	CallbackURL string
+	Type        string
+	Status      string
+	Created     string
+	Updated     string
+	Customer    string
+	ItemID      uint
+	UserID      uint
+	OrderID     string
 }
 
-type Transactiondetail struct {
+type Item struct {
 	gorm.Model
-	TransactionID uint
-	ExternalID    string
-	ProductID     uint
-	Quantity      int
-	Total         int
-	Customer      string
-	UserID        uint
-	Transaction   Transaction `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:TransactionID"`
+	SubTotal int
+	Customer string
+	UserID   uint
+	UserName string
+	OrderID  string
+	Status   string
+	Details  []ItemDetail `gorm:"foreignKey:ItemID"`
+}
+
+type ItemDetail struct {
+	gorm.Model
+	ItemID    uint
+	ProductID uint
+	Quantity  int
+	Total     int
+	Price     int
+	Product   repository.Product `gorm:"foreignKey:ProductID"`
 }
