@@ -14,5 +14,6 @@ func Migrate(db *gorm.DB) {
 	db.AutoMigrate(&pRepo.Product{})
 	db.AutoMigrate(&rRepo.Restock{})
 	db.AutoMigrate(&tRepo.Transaction{})
-	db.AutoMigrate(&tRepo.Transactiondetail{})
+	db.AutoMigrate(&tRepo.Item{})
+	db.AutoMigrate(&tRepo.ItemDetail{})
 }
