@@ -77,17 +77,17 @@ func CoreToGetAllTransactionDetailsResponse(data []transactions.ItemCore) []Tran
 type TransactionResponse struct {
 	ID          string `json:"id"`
 	ExternalID  string `json:"external_id"`
-	OrderID     string `json:"order_id"`
+	OrderID     string `json:"reference_id"`
+	Currency    string `json:"currency"`
 	Amount      int    `json:"amount"`
+	ExpiresAt   string `json:"expires_at"`
+	Created     string `json:"created"`
+	Updated     string `json:"updated"`
 	QRString    string `json:"qr_string"`
 	CallbackURL string `json:"callback_url"`
 	Type        string `json:"type"`
-	Status      string `json:"status"`
-	Created     string `json:"created"`
-	Updated     string `json:"updated"`
 	Customer    string `json:"customer" form:"customer"`
-	ItemID      uint   `json:"item_id" form:"item_id"`
-	UserID      uint   `json:"user_id" form:"user_id"`
+	Status      string `json:"status"`
 }
 
 func CoreToTransactionResponse(data transactions.Core) TransactionResponse {
@@ -95,16 +95,16 @@ func CoreToTransactionResponse(data transactions.Core) TransactionResponse {
 		ID:          data.ID,
 		ExternalID:  data.ExternalID,
 		OrderID:     data.OrderID,
+		Currency:    data.Currency,
 		Amount:      data.Amount,
+		ExpiresAt:   data.ExpiresAt,
+		Created:     data.Created,
+		Updated:     data.Updated,
 		QRString:    data.QRString,
 		CallbackURL: data.CallbackURL,
 		Type:        data.Type,
-		Status:      data.Status,
-		Created:     data.Created,
-		Updated:     data.Updated,
 		Customer:    data.Customer,
-		ItemID:      data.ItemID,
-		UserID:      data.UserID,
+		Status:      data.Status,
 	}
 }
 

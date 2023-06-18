@@ -14,7 +14,7 @@ func TransactionRoutes(e *echo.Echo, pc transactions.Handler) {
 	e.Use(middleware.CORS())
 	e.Use(middleware.Logger())
 
-	e.POST("/payments", pc.AddPayments(), helper.JWTMiddleware())
+	e.POST("/payments", pc.AddPayments())
 	e.POST("/transactions", pc.AddTransactions(), helper.JWTMiddleware())
 	e.GET("/transactions", pc.GetHistoryTransactionHandler(), helper.JWTMiddleware())
 }

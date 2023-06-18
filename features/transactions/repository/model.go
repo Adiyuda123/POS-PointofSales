@@ -9,17 +9,20 @@ import (
 type Transaction struct {
 	ID          string
 	ExternalID  string
+	OrderID     string
+	Currency    string
 	Amount      int
+	ExpiresAt   string
+	Created     string
+	Updated     string
 	QRString    string
 	CallbackURL string
 	Type        string
-	Status      string
-	Created     string
-	Updated     string
 	Customer    string
 	ItemID      uint
 	UserID      uint
-	OrderID     string
+	Status      string
+	Item        Item `gorm:"foreignKey:ItemID"`
 }
 
 type Item struct {

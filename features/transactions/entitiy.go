@@ -10,18 +10,20 @@ import (
 
 type Core struct {
 	ID          string
-	ExternalID  string `validate:"required"`
-	Amount      int    `validate:"required"`
-	QRString    string
-	CallbackURL string `validate:"required"`
-	Type        string
-	Status      string
+	ExternalID  string
+	OrderID     string
+	Currency    string
+	Amount      int
+	ExpiresAt   string
 	Created     string
 	Updated     string
+	QRString    string
+	CallbackURL string
+	Type        string
 	Customer    string
 	ItemID      uint
 	UserID      uint
-	OrderID     string
+	Status      string
 }
 
 type ItemCore struct {
@@ -52,14 +54,14 @@ type Handler interface {
 
 type UseCase interface {
 	AddTransactions(userID uint, newDetailTransaction ItemCore) (ItemCore, error)
-	AddPayments(userID uint, newTransaction Core) (Core, error)
+	AddPayments(newTransaction Core) (Core, error)
 	GetItemByOrderId(orderID string) (ItemCore, error)
 	GetHistoryTransaction(userID uint, limit, offset int, search string, fromDate, toDate time.Time) ([]ItemCore, int, error)
 }
 
 type Repository interface {
 	InsertDetailTransactions(userID uint, inputDetail ItemCore) (ItemCore, error)
-	InsertPayments(userID uint, newTransaction Core) (Core, error)
+	InsertPayments(newTransaction Core) (Core, error)
 	SelectItemByOrderId(orderID string) (ItemCore, error)
 	SelectHistoryTransaction(userID uint, limit, offset int, search string, fromDate, toDate time.Time) ([]ItemCore, int, error)
 }

@@ -66,18 +66,22 @@ func ListItemToCore(itemModel []Item) []transactions.ItemCore {
 
 func CoreToTransaction(data transactions.Core) Transaction {
 	return Transaction{
+		ID:          data.ID,
 		ExternalID:  data.ExternalID,
+		OrderID:     data.OrderID,
+		Currency:    data.Currency,
 		Amount:      data.Amount,
+		ExpiresAt:   data.ExpiresAt,
+		Created:     data.Created,
+		Updated:     data.Updated,
 		QRString:    data.QRString,
 		CallbackURL: data.CallbackURL,
 		Type:        data.Type,
-		Status:      data.Status,
-		Created:     data.Created,
-		Updated:     data.Updated,
 		Customer:    data.Customer,
 		ItemID:      data.ItemID,
 		UserID:      data.UserID,
-		OrderID:     data.OrderID,
+		Status:      data.Status,
+		Item:        Item{},
 	}
 
 }
@@ -86,17 +90,19 @@ func TransactionToCore(data Transaction) transactions.Core {
 	return transactions.Core{
 		ID:          data.ID,
 		ExternalID:  data.ExternalID,
+		OrderID:     data.OrderID,
+		Currency:    data.Currency,
 		Amount:      data.Amount,
+		ExpiresAt:   data.ExpiresAt,
+		Created:     data.Created,
+		Updated:     data.Updated,
 		QRString:    data.QRString,
 		CallbackURL: data.CallbackURL,
 		Type:        data.Type,
-		Status:      data.Status,
-		Created:     data.Created,
-		Updated:     data.Updated,
 		Customer:    data.Customer,
 		ItemID:      data.ItemID,
 		UserID:      data.UserID,
-		OrderID:     data.OrderID,
+		Status:      data.Status,
 	}
 }
 
