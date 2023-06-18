@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"POS-PointofSales/app/config"
 	"POS-PointofSales/features/products"
 	"POS-PointofSales/features/transactions"
 	"POS-PointofSales/features/users"
@@ -102,65 +101,67 @@ func (tc *transactionController) GetHistoryTransactionHandler() echo.HandlerFunc
 // AddPayments implements transactions.Handler.
 func (tc *transactionController) AddPayments() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		userID := helper.DecodeToken(c)
-		if userID == 0 {
-			c.Logger().Error("empty decode tokens")
-			return c.JSON(helper.ResponseFormat(http.StatusBadRequest, "jwt invalid", nil))
-		}
-
 		var inputRequest TransactionRequest
 		if err := c.Bind(&inputRequest); err != nil {
 			c.Logger().Error("error on bind payment input", err.Error())
 			return c.JSON(helper.ResponseFormat(http.StatusBadRequest, "invalid input", nil))
 		}
-		req, err := http.NewRequest(http.MethodPost, "https://api.xendit.co/payments", nil)
-		if err != nil {
-			c.Logger().Error("error creating request", err.Error())
-			return c.JSON(http.StatusInternalServerError, "Failed to create request")
-		}
 
-		apiKey := config.XenditSecretKey
-		req.SetBasicAuth(apiKey, "")
-
-		client := &http.Client{}
-		ress, err := client.Do(req)
-		if err != nil {
-			c.Logger().Error("error sending request", err.Error())
-			return c.JSON(http.StatusInternalServerError, "Failed to send request")
-		}
-
-		defer ress.Body.Close()
-
-		items, err := tc.service.GetItemByOrderId(inputRequest.OrderID)
+		items, err := tc.service.GetItemByOrderId(inputRequest.ReferenceID)
 		if err != nil {
 			c.Logger().Error("error get product data", err.Error())
 			return c.JSON(helper.ResponseFormat(http.StatusInternalServerError, "Failed to get products", nil))
 		}
-
 		timestamp := time.Now().Unix()
-		externalID := fmt.Sprintf("POSApp-SellerID:%d-Customer:%s-Timestamp:%d", userID, items.Customer, timestamp)
+		externalID := fmt.Sprintf("POSApp-Customer:%s-Timestamp:%d", items.Customer, timestamp)
 		callbackURL := "https://www.pos-callback.com"
-		newTransaction := transactions.Core{
+		currency := "IDR"
+		types := "DYNAMIC"
+		created := time.Now()
+		expiresAt := created.Add(24 * time.Hour).Format("2006-01-02T15:04:05.999999Z")
+
+		requestBody := TransactionRequest{
 			ExternalID:  externalID,
-			Amount:      items.SubTotal,
+			ReferenceID: inputRequest.ReferenceID,
+			Type:        types,
+			Currency:    currency,
+			Amount:      float64(items.SubTotal),
+			ExpiresAt:   expiresAt,
 			CallbackURL: callbackURL,
-			Type:        inputRequest.Type,
-			ItemID:      inputRequest.ItemID,
-			Customer:    items.Customer,
-			OrderID:     inputRequest.OrderID,
 		}
 
-		res, err := tc.service.AddPayments(userID, newTransaction)
+		qrCodeResponse, err := helper.SendXenditRequest(requestBody)
+		if err != nil {
+			c.Logger().Error("error generating QR code:", err.Error())
+			return c.JSON(helper.ResponseFormat(http.StatusInternalServerError, "Failed to generate QR code", nil))
+		}
+
+		newTransaction := transactions.Core{
+			ID:          qrCodeResponse.ID,
+			ExternalID:  externalID,
+			OrderID:     inputRequest.ReferenceID,
+			Currency:    currency,
+			Amount:      qrCodeResponse.Amount,
+			ExpiresAt:   expiresAt,
+			Created:     qrCodeResponse.Created,
+			Updated:     qrCodeResponse.Updated,
+			QRString:    qrCodeResponse.QRString,
+			CallbackURL: callbackURL,
+			Type:        types,
+			Customer:    items.Customer,
+			ItemID:      items.Id,
+			Status:      qrCodeResponse.Status,
+		}
+
+		res, err := tc.service.AddPayments(newTransaction)
 		if err != nil {
 			c.Logger().Error("error inserting QR code payment:", err.Error())
 			return c.JSON(helper.ResponseFormat(http.StatusInternalServerError, err.Error(), nil))
 		}
 
-		go helper.GenerateQRCode(res.ID, res.Customer)
-
 		dataResponse := CoreToTransactionResponse(res)
 
-		return c.JSON(helper.ReponseFormatWithMeta(http.StatusCreated, "Successfully add payment data", dataResponse, nil))
+		return c.JSON(helper.ResponseFormat(http.StatusCreated, "Successfully add payment data", dataResponse))
 	}
 }
 

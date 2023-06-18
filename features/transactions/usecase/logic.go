@@ -45,14 +45,14 @@ func (tl *transactionLogic) GetItemByOrderId(orderID string) (transactions.ItemC
 }
 
 // AddPayments implements transactions.UseCase.
-func (tl *transactionLogic) AddPayments(userID uint, newTransaction transactions.Core) (transactions.Core, error) {
+func (tl *transactionLogic) AddPayments(newTransaction transactions.Core) (transactions.Core, error) {
 	err := tl.validator.Struct(newTransaction)
 	if err != nil {
 		log.Error("validation error:", err.Error())
 		return transactions.Core{}, err
 	}
 
-	res, err := tl.t.InsertPayments(userID, newTransaction)
+	res, err := tl.t.InsertPayments(newTransaction)
 	if err != nil {
 		log.Error("failed on calling add product query")
 		if strings.Contains(err.Error(), "open") {

@@ -3,7 +3,6 @@ package repository
 import (
 	"POS-PointofSales/features/products/repository"
 	"POS-PointofSales/features/transactions"
-	"POS-PointofSales/helper"
 	"time"
 
 	"github.com/labstack/gommon/log"
@@ -96,28 +95,25 @@ func (tm *transactionModel) SelectItemByOrderId(orderID string) (transactions.It
 }
 
 // InsertPayments implements transactions.Repository.
-func (tm *transactionModel) InsertPayments(userID uint, newTransaction transactions.Core) (transactions.Core, error) {
+func (tm *transactionModel) InsertPayments(newTransaction transactions.Core) (transactions.Core, error) {
 	payment := CoreToTransaction(newTransaction)
-	qrCode, err := helper.CreateQRCodeHelper2(payment.ExternalID, payment.CallbackURL, payment.Amount)
-	if err != nil {
-		log.Error("error creating QR code:", err.Error())
-		return transactions.Core{}, err
-	}
-
 	qrCodePayment := Transaction{
-		ID:          qrCode.ID,
+		ID:          payment.ID,
 		ExternalID:  payment.ExternalID,
+		OrderID:     payment.OrderID,
+		Currency:    payment.Currency,
 		Amount:      payment.Amount,
-		QRString:    qrCode.QRString,
+		ExpiresAt:   payment.ExpiresAt,
+		Created:     payment.Created,
+		Updated:     payment.Updated,
+		QRString:    payment.QRString,
 		CallbackURL: payment.CallbackURL,
-		Type:        string(qrCode.Type),
-		Status:      qrCode.Status,
-		Created:     qrCode.Created.String(),
-		Updated:     qrCode.Updated.String(),
+		Type:        payment.Type,
 		Customer:    payment.Customer,
 		ItemID:      payment.ItemID,
-		UserID:      userID,
-		OrderID:     payment.OrderID,
+		UserID:      payment.UserID,
+		Status:      payment.Status,
+		Item:        Item{},
 	}
 
 	if err := tm.db.Create(&qrCodePayment).Error; err != nil {
