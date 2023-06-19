@@ -247,12 +247,22 @@ func (pc *productController) UpdateHandler() echo.HandlerFunc {
 		updateInput.Name = c.FormValue("product_name")
 		updateInput.Descriptions = c.FormValue("descriptions")
 		priceStr := c.FormValue("price")
-		price, err := strconv.Atoi(priceStr)
-		if err != nil {
-			c.Logger().Error("cannot convert price to int", err.Error())
-			return c.JSON(helper.ResponseFormat(http.StatusBadRequest, "invalid price value", nil))
+		if priceStr == "" {
+			// Retrieve the current price from the database
+			product, err := pc.service.GetProductById(uint(productId))
+			if err != nil {
+				c.Logger().Error("failed to retrieve product", err.Error())
+				return c.JSON(helper.ResponseFormat(http.StatusInternalServerError, "failed to retrieve product", nil))
+			}
+			updateInput.Price = product.Price
+		} else {
+			price, err := strconv.Atoi(priceStr)
+			if err != nil {
+				c.Logger().Error("cannot convert price to int", err.Error())
+				return c.JSON(helper.ResponseFormat(http.StatusBadRequest, "invalid price value", nil))
+			}
+			updateInput.Price = price
 		}
-		updateInput.Price = price
 		picture, err := c.FormFile("pictures")
 		if err != nil {
 			if err == http.ErrMissingFile {

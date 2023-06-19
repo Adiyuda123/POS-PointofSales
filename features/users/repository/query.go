@@ -39,7 +39,7 @@ func (um *userModel) DeleteUser(id uint) error {
 // GetUserById implements users.Repository.
 func (um *userModel) GetUserById(id uint) (users.Core, error) {
 	var res users.Core
-	if err := um.db.Table("users").Select("name, email, pictures").Where("id = ?", id).First(&res).Error; err != nil {
+	if err := um.db.Table("users").Select("id, name, email, pictures").Where("id = ?", id).First(&res).Error; err != nil {
 		log.Error("error occurs in finding user profile", err.Error())
 		return users.Core{}, err
 	}

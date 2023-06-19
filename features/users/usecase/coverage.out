@@ -1,0 +1,25 @@
+mode: set
+POS-PointofSales/features/users/usecase/logic.go:19.44,27.2 3 1
+POS-PointofSales/features/users/usecase/logic.go:30.53,32.16 2 1
+POS-PointofSales/features/users/usecase/logic.go:32.16,34.52 2 1
+POS-PointofSales/features/users/usecase/logic.go:34.52,37.4 2 1
+POS-PointofSales/features/users/usecase/logic.go:37.9,37.60 1 0
+POS-PointofSales/features/users/usecase/logic.go:37.60,40.4 2 0
+POS-PointofSales/features/users/usecase/logic.go:41.3,42.13 2 0
+POS-PointofSales/features/users/usecase/logic.go:44.2,44.12 1 1
+POS-PointofSales/features/users/usecase/logic.go:48.128,58.16 3 1
+POS-PointofSales/features/users/usecase/logic.go:58.16,61.3 2 0
+POS-PointofSales/features/users/usecase/logic.go:63.2,63.76 1 1
+POS-PointofSales/features/users/usecase/logic.go:63.76,65.44 2 0
+POS-PointofSales/features/users/usecase/logic.go:65.44,68.4 2 0
+POS-PointofSales/features/users/usecase/logic.go:68.9,68.66 1 0
+POS-PointofSales/features/users/usecase/logic.go:68.66,71.4 2 0
+POS-PointofSales/features/users/usecase/logic.go:71.9,71.63 1 0
+POS-PointofSales/features/users/usecase/logic.go:71.63,74.4 2 0
+POS-PointofSales/features/users/usecase/logic.go:74.9,74.55 1 0
+POS-PointofSales/features/users/usecase/logic.go:74.55,77.4 2 0
+POS-PointofSales/features/users/usecase/logic.go:78.3,78.13 1 0
+POS-PointofSales/features/users/usecase/logic.go:80.2,80.12 1 1
+POS-PointofSales/features/users/usecase/logic.go:84.68,86.16 2 1
+POS-PointofSales/features/users/usecase/logic.go:86.16,89.3 2 1
+POS-PointofSales/features/users/usecase/logic.go:91.2,91.20 1 1

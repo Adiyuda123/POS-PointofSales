@@ -169,9 +169,14 @@ func (pm *productModel) Update(userId uint, id uint, input products.Core, file *
 	data := CoreToModel(input)
 
 	productToUpdate := &Product{}
-	if err := pm.db.First(productToUpdate, "id = ? AND user_id = ?", id, userId).Error; err != nil {
+	if err := pm.db.First(productToUpdate, "id = ?", id).Error; err != nil {
 		log.Error("Error in finding product")
-		return errors.New("product not found or not owned by the user")
+		return errors.New("product not found")
+	}
+
+	if userId != 1 && productToUpdate.UserID != userId {
+		log.Error("User is not authorized to update this product")
+		return errors.New("user is not authorized to update this product")
 	}
 
 	if file != nil {
@@ -190,7 +195,7 @@ func (pm *productModel) Update(userId uint, id uint, input products.Core, file *
 		data.Pictures = uploadURL[0]
 	}
 
-	tx := pm.db.Model(&Product{}).Where("id = ? AND user_id = ?", id, userId).Updates(&data)
+	tx := pm.db.Model(&Product{}).Where("id = ?", id).Updates(&data)
 	if tx.RowsAffected < 1 {
 		log.Error("Failed to update product")
 		return errors.New("product not updated")

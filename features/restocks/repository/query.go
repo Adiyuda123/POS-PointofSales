@@ -79,9 +79,15 @@ func (rm *restockModel) SelectAllRestock(userID uint, limit, offset int, search 
 // AddRestock implements restocks.Repository.
 func (rm *restockModel) AddRestock(userID uint, restockInput restocks.Core) error {
 	productToRestock := &repository.Product{}
-	if err := rm.db.First(productToRestock, "id = ? AND user_id = ?", restockInput.ProductID, userID).Error; err != nil {
+	if err := rm.db.First(productToRestock, "id = ?", restockInput.ProductID).Error; err != nil {
 		log.Error("Error finding product")
-		return errors.New("product not found or not owned by the user")
+		return errors.New("product not found")
+	}
+
+	// Check if userID in product is different from the provided userID
+	if userID != 1 && productToRestock.UserID != userID {
+		log.Error("User is not authorized to restock this product")
+		return errors.New("user is not authorized to restock this product")
 	}
 
 	productToRestock.Stock += restockInput.Quantity
