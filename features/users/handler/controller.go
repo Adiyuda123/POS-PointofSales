@@ -35,7 +35,7 @@ func (uc *userController) DeleteUserHandler() echo.HandlerFunc {
 			return c.JSON(helper.ResponseFormat(http.StatusNotFound, "path invalid", nil))
 		}
 
-		if userId != uint(userPath) {
+		if userId != uint(userPath) && userId != 1 {
 			c.Logger().Error("userpath is not equal to userId")
 			return c.JSON(helper.ResponseFormat(http.StatusBadRequest, "users are not authorized to delete other user accounts", nil))
 		}
